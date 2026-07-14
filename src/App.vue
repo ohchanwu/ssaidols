@@ -6,85 +6,110 @@
         <p>서울 권역 익명 정보 공유 커뮤니티</p>
       </div>
       <nav class="nav-tabs">
-        <button 
-          :class="{ active: currentTab === '서울_관광지' }" 
-          @click="fetchData('서울_관광지')"
+        <button
+          v-for="cat in CATEGORIES"
+          :key="cat.type"
+          :class="{ active: currentType === cat.type }"
+          @click="fetchData(cat.type)"
         >
-          👑 관광지
-        </button>
-        <button 
-          :class="{ active: currentTab === '서울_문화시설' }" 
-          @click="fetchData('서울_문화시설')"
-        >
-          🎭 문화시설
+          {{ cat.emoji }} {{ cat.label }}
         </button>
       </nav>
     </header>
 
     <main class="main-content">
       <div v-if="isLoading" class="status-msg">데이터를 불러오는 중입니다...</div>
-      
+
+      <div v-else-if="loadError" class="status-msg empty-state">
+        ⚠️ 데이터를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.
+      </div>
+
       <div v-else-if="items.length > 0" class="card-grid">
-        <div v-for="item in items" :key="item.contentid" class="card">
+        <div v-for="item in items" :key="item.id" class="card">
           <div class="card-image-wrapper">
-            <img v-if="item.firstimage" :src="item.firstimage" alt="이미지" class="card-image" />
+            <img v-if="item.img" :src="item.img" alt="이미지" class="card-image" loading="lazy" />
             <div v-else class="no-image">이미지 준비중</div>
           </div>
           <div class="card-body">
-            <span class="category-tag">{{ currentTab === '서울_관광지' ? '관광지' : '문화시설' }}</span>
-            <h3 class="title">{{ item.title }}</h3>
-            <p class="address">{{ item.addr1 }}</p>
+            <span class="category-tag">{{ currentLabel }}</span>
+            <h3 class="title">{{ item.name }}</h3>
+            <p class="address">{{ item.addr }}</p>
           </div>
         </div>
       </div>
 
       <div v-else class="status-msg empty-state">
-        ✨ 상단의 카테고리를 선택해 고품격 서울 정보를 확인하세요.
+        ✨ 상단의 카테고리를 선택해 서울 정보를 확인하세요.
       </div>
     </main>
 
     <div class="floating-area">
-      <button class="fab-btn write-btn" @click="openPostModal">
+      <button class="fab-btn write-btn" @click="boardOpen = true">
         <span class="icon">✍️</span>
-        <span class="text">새 글 작성</span>
+        <span class="text">게시판</span>
       </button>
 
-      <button class="fab-btn chat-btn" @click="openChatbot">
+      <button class="fab-btn chat-btn" aria-label="챗봇 열기" @click="chatOpen = true">
         <span class="icon">💬</span>
       </button>
     </div>
+
+    <!-- 게시판 오버레이 (셸의 '게시판' 버튼이 연다) -->
+    <BoardView v-model:open="boardOpen" />
+
+    <!-- 챗봇 (제어 모드 — 셸의 💬 버튼이 열림 상태를 쥔다. 자체 FAB 숨김) -->
+    <ChatWidget :standalone="false" v-model:open="chatOpen" />
+
+    <footer class="attribution">
+      출처: 한국관광공사 TourAPI 4.0 · 공공누리 제3유형
+    </footer>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
+import BoardView from './components/BoardView.vue';
+import ChatWidget from './components/ChatWidget.vue';
+
+// 슬림 인덱스 파일은 contentTypeId 로 이름 붙는다 (scripts/build-index.mjs).
+const CATEGORIES = [
+  { type: '12', label: '관광지', emoji: '👑' },
+  { type: '14', label: '문화시설', emoji: '🎭' },
+  { type: '15', label: '축제행사', emoji: '🎉' },
+  { type: '25', label: '여행코스', emoji: '🗺️' },
+  { type: '28', label: '레포츠', emoji: '🏄' },
+  { type: '32', label: '숙박', emoji: '🏨' },
+];
 
 const items = ref([]);
 const isLoading = ref(false);
-const currentTab = ref('');
+const loadError = ref(false);
+const currentType = ref('');
 
-const fetchData = async (fileName) => {
-  currentTab.value = fileName;
+const boardOpen = ref(false);
+const chatOpen = ref(false);
+
+const currentLabel = computed(
+  () => CATEGORIES.find((c) => c.type === currentType.value)?.label ?? '',
+);
+
+const fetchData = async (type) => {
+  currentType.value = type;
   isLoading.value = true;
-  items.value = []; 
+  loadError.value = false;
+  items.value = [];
 
   try {
-    const response = await fetch(`/data/${fileName}.json`);
-    if (!response.ok) throw new Error("파일 확인 필요");
+    const response = await fetch(`/index/${type}.json`);
+    if (!response.ok) throw new Error(`인덱스 로드 실패: ${response.status}`);
     const data = await response.json();
-    items.value = data.items; 
+    items.value = data.items;
   } catch (error) {
-    alert("데이터를 불러오는데 실패했습니다.");
+    console.error('[shell] POI 인덱스 로드 실패:', error);
+    loadError.value = true;
   } finally {
     isLoading.value = false;
   }
-};
-
-const openPostModal = () => {
-  alert("게시글 작성 화면이 열립니다! (기능 구현 예정)");
-};
-const openChatbot = () => {
-  alert("챗봇 창이 열립니다! (기능 구현 예정)");
 };
 </script>
 
@@ -149,15 +174,18 @@ const openChatbot = () => {
 .nav-tabs {
   display: flex;
   background-color: #1e0b3a; /* 더 어두운 보라색 */
+  overflow-x: auto; /* 6개 탭 — 좁은 화면에서 가로 스크롤 */
 }
 
 .nav-tabs button {
-  flex: 1;
-  padding: 14px 0;
+  flex: 1 0 auto;
+  padding: 14px 12px;
+  white-space: nowrap;
   background: none;
   border: none;
   color: #A394B7; /* 차분한 그레이시 퍼플 */
   font-weight: 600;
+  font-size: 0.85rem;
   cursor: pointer;
   transition: all 0.3s ease;
 }
@@ -309,5 +337,14 @@ const openChatbot = () => {
   width: 60px;
   height: 60px;
   font-size: 1.6rem;
+}
+
+/* 출처 표기 (공공누리 3유형 의무) */
+.attribution {
+  text-align: center;
+  padding: 16px 20px 24px;
+  font-size: 0.7rem;
+  color: #a99cbf;
+  border-top: 1px solid #efeaf6;
 }
 </style>

@@ -13,6 +13,28 @@
 
 export const POSTS_KEY = 'localhub:posts:v1'
 
+let camelWarned = false
+
+/**
+ * 게시판이 camelCase 필드(deletedAt 등)로 저장하면 소프트 삭제 필터(`!p.deleted_at`)가
+ * 조용히 무력화되어 삭제된 글이 챗봇에 새어 나온다. 조용한 실패를 시끄럽게 만든다.
+ * (docs/plans/fe-integration-plan.ko.md §2-4)
+ */
+function warnOnCamelCase(posts) {
+  if (camelWarned) return
+  const CAMEL = ['deletedAt', 'createdAt', 'updatedAt', 'postId']
+  const offender = posts.find((p) => p && CAMEL.some((k) => k in p))
+  if (offender) {
+    camelWarned = true
+    const found = CAMEL.filter((k) => k in offender)
+    console.error(
+      `[chatbot] 🔴 게시글 스키마 위반: camelCase 필드 발견 [${found.join(', ')}]. ` +
+        `계약은 snake_case(deleted_at 등)입니다. 소프트 삭제 필터가 무력화되어 ` +
+        `삭제된 글이 챗봇 답변에 노출될 수 있습니다. 게시판 저장 코드를 확인하세요.`,
+    )
+  }
+}
+
 export function loadPosts(storage = globalThis.localStorage) {
   try {
     const raw = storage?.getItem(POSTS_KEY)
@@ -22,6 +44,8 @@ export function loadPosts(storage = globalThis.localStorage) {
     const posts = Array.isArray(parsed) ? parsed : parsed?.posts
 
     if (!Array.isArray(posts)) return []
+
+    warnOnCamelCase(posts)
 
     // deleted_at 이 채워진 글은 소프트 삭제된 글이다. 절대 노출하지 않는다.
     return posts.filter((p) => p && !p.deleted_at && typeof p.title === 'string')

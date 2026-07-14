@@ -5,12 +5,34 @@
   팀원의 앱에 붙일 때는 src/chatbot/ 를 복사하고 이 컴포넌트를 레이아웃에 얹으면 된다.
 -->
 <script setup>
-import { ref, reactive, nextTick, onMounted } from 'vue'
+import { ref, reactive, nextTick, onMounted, computed, watch } from 'vue'
 import { createChatbot } from '../chatbot/index.js'
+
+/**
+ * standalone(기본): 자체 플로팅 버튼(FAB)을 띄운다. 다른 프로젝트에 그대로 붙일 때 쓰는 모드.
+ * 제어 모드: standalone=false + v-model:open. 부모(셸)가 자기 버튼으로 열림 상태를 쥔다.
+ *   → 셸이 이미 테마에 맞는 챗봇 버튼을 갖고 있어, FAB 두 개가 생기는 것을 막는다.
+ */
+const props = defineProps({
+  standalone: { type: Boolean, default: true },
+  open: { type: Boolean, default: false },
+})
+const emit = defineEmits(['update:open'])
 
 const bot = createChatbot()
 
-const open = ref(false)
+const internalOpen = ref(false)
+const open = computed({
+  get: () => (props.standalone ? internalOpen.value : props.open),
+  set: (v) => {
+    if (props.standalone) internalOpen.value = v
+    else emit('update:open', v)
+  },
+})
+watch(open, (v) => {
+  if (v) scrollToBottom()
+})
+
 const input = ref('')
 const busy = ref(false)
 const listEl = ref(null)
@@ -56,7 +78,7 @@ onMounted(scrollToBottom)
 <template>
   <div class="lh-chat">
     <button
-      v-if="!open"
+      v-if="standalone && !open"
       class="lh-fab"
       type="button"
       aria-label="챗봇 열기"
@@ -65,7 +87,7 @@ onMounted(scrollToBottom)
       💬
     </button>
 
-    <section v-else class="lh-panel" role="dialog" aria-label="LocalHub 챗봇">
+    <section v-if="open" class="lh-panel" role="dialog" aria-label="LocalHub 챗봇">
       <header class="lh-head">
         <strong>LocalHub 챗봇</strong>
         <div class="lh-head-actions">
