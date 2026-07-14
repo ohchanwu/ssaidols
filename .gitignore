@@ -8,6 +8,7 @@ node_modules/
 
 # 빌드 산출물
 dist/
+.vite/
 
 # 빌드로 생성되는 POI 인덱스 (scripts/build-index.mjs가 재생성하므로 커밋 불필요)
 public/index/
