@@ -7,7 +7,7 @@
   키가 없으면 코어가 오류 메시지를 버블로 돌려주므로 UI 는 그대로 동작한다.
 -->
 <script setup>
-import { ref, reactive, nextTick } from 'vue'
+import { ref, reactive, nextTick, onBeforeUnmount } from 'vue'
 import { createChatbot } from '../chatbot/index.js'
 
 const bot = createChatbot()
@@ -17,6 +17,33 @@ const input = ref('')
 const busy = ref(false)
 const bodyEl = ref(null)
 const messages = reactive([...bot.messages])
+
+// 크기 조절 — 우하단 고정 위젯이라 좌상단 핸들로 끌면 화면 안쪽(위·왼쪽)으로 커진다.
+const panelWidth = ref(340) // .chat-window 너비
+const bodyHeight = ref(320) // .chat-body(대화 영역) 높이
+let resizeStart = null
+
+const startResize = (e) => {
+  e.preventDefault()
+  resizeStart = { x: e.clientX, y: e.clientY, w: panelWidth.value, h: bodyHeight.value }
+  window.addEventListener('pointermove', onResize)
+  window.addEventListener('pointerup', stopResize)
+}
+const onResize = (e) => {
+  if (!resizeStart) return
+  const dx = resizeStart.x - e.clientX // 왼쪽으로 끌수록 넓어짐
+  const dy = resizeStart.y - e.clientY // 위로 끌수록 높아짐
+  const maxW = Math.min(560, window.innerWidth - 40)
+  const maxH = Math.min(640, window.innerHeight - 160)
+  panelWidth.value = Math.max(280, Math.min(maxW, resizeStart.w + dx))
+  bodyHeight.value = Math.max(180, Math.min(maxH, resizeStart.h + dy))
+}
+const stopResize = () => {
+  resizeStart = null
+  window.removeEventListener('pointermove', onResize)
+  window.removeEventListener('pointerup', stopResize)
+}
+onBeforeUnmount(stopResize)
 
 const scrollToBottom = async () => {
   await nextTick()
@@ -47,12 +74,13 @@ const send = async () => {
 
 <template>
   <div class="chatbot-floating">
-    <div v-if="open" class="chat-window">
+    <div v-if="open" class="chat-window" :style="{ width: panelWidth + 'px' }">
+      <div class="resize-handle" title="드래그하여 크기 조절" @pointerdown="startResize"></div>
       <div class="chat-header">
         <span>🤖 AI 도우미</span>
         <button @click="toggle">✕</button>
       </div>
-      <div ref="bodyEl" class="chat-body">
+      <div ref="bodyEl" class="chat-body" :style="{ height: bodyHeight + 'px' }">
         <p v-if="messages.length === 0" class="bot-msg">
           서울의 관광지·문화시설·축제·숙소 정보를 안내해 드립니다. 무엇이 궁금하신가요?
         </p>
@@ -110,6 +138,7 @@ const send = async () => {
   box-shadow: 2px 2px 0 rgba(45, 42, 38, 0.15);
 }
 .chat-window {
+  position: relative;
   width: 340px;
   max-width: calc(100vw - 40px);
   background: #ffffff;
@@ -119,6 +148,26 @@ const send = async () => {
   box-shadow: 6px 6px 0 rgba(45, 42, 38, 0.1);
   display: flex;
   flex-direction: column;
+}
+.resize-handle {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 18px;
+  height: 18px;
+  cursor: nwse-resize;
+  z-index: 5;
+  touch-action: none; /* 터치에서 스크롤 대신 리사이즈 */
+}
+.resize-handle::before {
+  content: '';
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 7px;
+  height: 7px;
+  border-top: 2px solid #9e988f;
+  border-left: 2px solid #9e988f;
 }
 .chat-header {
   background: #1e1c1a;
@@ -140,7 +189,6 @@ const send = async () => {
 .chat-body {
   padding: 16px;
   background: #f4f1ea;
-  height: 320px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
