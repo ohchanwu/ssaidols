@@ -1,8 +1,7 @@
 /**
  * LocalHub 챗봇 — 공개 API.
  *
- * 프레임워크 비의존. 팀원의 Vue 앱에 붙일 때는 이 디렉터리를 통째로 복사하고
- * ChatWidget.vue 하나만 레이아웃에 얹으면 된다.
+ * 프레임워크 비의존. Vue 컴포넌트(ChatPanel.vue)는 이 코어를 createChatbot() 으로 감싸 쓴다.
  *
  *   const bot = createChatbot({ apiKey: import.meta.env.VITE_OPENAI_API_KEY })
  *   const reply = await bot.send('경복궁 근처 가볼만한 곳 알려줘')
