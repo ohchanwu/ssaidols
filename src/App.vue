@@ -9,7 +9,7 @@
   - 출처 표기 추가 (공공누리 3유형 의무)
 -->
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import BoardSection from './components/BoardSection.vue'
 import ChatPanel from './components/ChatPanel.vue'
 
@@ -48,6 +48,9 @@ const fetchData = async (type) => {
     isLoading.value = false
   }
 }
+
+// 첫 화면에서 빈 카테고리 박스를 보여주지 않도록 관광지를 기본 로드한다.
+onMounted(() => fetchData('12'))
 </script>
 
 <template>
