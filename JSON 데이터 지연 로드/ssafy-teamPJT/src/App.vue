@@ -9,25 +9,21 @@
     </header>
 
     <main class="main-content">
-      <!-- 상단 영역: 정보 탐색 (리스트 뷰 & 자체 스크롤) -->
+      <!-- 6개 카테고리 탭 버튼 -->
       <section class="info-section">
-        <div class="tab-buttons">
+        <div class="tab-grid">
           <button 
-            :class="{ active: currentTab === '서울_관광지' }" 
-            @click="fetchData('서울_관광지')"
+            v-for="cat in categories" 
+            :key="cat.file"
+            :class="{ active: currentTab === cat.file }" 
+            @click="fetchData(cat.file)"
           >
-            📍 관광지 모아보기
-          </button>
-          <button 
-            :class="{ active: currentTab === '서울_문화시설' }" 
-            @click="fetchData('서울_문화시설')"
-          >
-            🎨 문화시설 모아보기
+            {{ cat.name }}
           </button>
         </div>
 
-        <!-- 데이터 리스트 컨테이너 (스크롤 고정 영역) -->
-        <div class="list-container">
+        <!-- 데이터 리스트 컨테이너 -->
+        <div class="list-container" id="explore-section">
           <div v-if="isLoading" class="status-box">
             <p>데이터를 불러오는 중입니다...</p>
           </div>
@@ -38,26 +34,24 @@
               <div v-else class="item-img no-img">이미지 없음</div>
               
               <div class="item-info">
-                <span class="item-category">{{ currentTab === '서울_관광지' ? '관광지' : '문화시설' }}</span>
+                <span class="item-category">{{ getCategoryName(currentTab) }}</span>
                 <h3 class="item-title">{{ item.title }}</h3>
-                <p class="item-address">{{ item.addr1 }}</p>
+                <p class="item-address">📍 {{ item.addr1 }}</p>
               </div>
             </div>
           </div>
 
           <div v-else class="status-box empty">
-            <p>👆 위 버튼을 눌러 서울의 명소를 확인해보세요.</p>
+            <p>👆 카테고리를 선택해 정보를 확인해보세요.</p>
           </div>
         </div>
       </section>
 
-      <!-- 하단 영역: 실시간 게시판 -->
+      <!-- 하단: 실시간 게시판 -->
       <section class="board-section">
         <div class="section-header">
           <h2>💬 실시간 로컬 커뮤니티</h2>
         </div>
-        
-        <!-- 게시글 리스트 (스크롤 고정) -->
         <div class="board-container">
           <div v-for="post in posts" :key="post.id" class="board-item">
             <div class="board-content">
@@ -67,8 +61,6 @@
             <span class="board-time">{{ post.time }}</span>
           </div>
         </div>
-
-        <!-- 빠른 글쓰기 영역 -->
         <div class="quick-write">
           <input type="text" v-model="newPost" placeholder="서울에서의 경험을 짧게 남겨주세요!" @keyup.enter="addPost" />
           <button @click="addPost">등록</button>
@@ -76,7 +68,7 @@
       </section>
     </main>
 
-    <!-- 우측 하단 챗봇 둥둥이 -->
+    <!-- 챗봇 -->
     <div class="chatbot-floating">
       <div v-if="isChatOpen" class="chat-window">
         <div class="chat-header">
@@ -84,7 +76,7 @@
           <button @click="isChatOpen = false">✕</button>
         </div>
         <div class="chat-body">
-          <p class="bot-msg">안녕하세요! 서울 관광이나 교통편에 대해 무엇이든 물어보세요.</p>
+          <p class="bot-msg">어떤 카테고리가 가장 궁금하신가요?</p>
         </div>
         <div class="chat-input">
           <input type="text" placeholder="질문 입력..." />
@@ -98,6 +90,15 @@
 
 <script setup>
 import { ref } from 'vue';
+
+const categories = [
+  { name: '관광지', file: '서울_관광지' },
+  { name: '레포츠', file: '서울_레포츠' },
+  { name: '문화시설', file: '서울_문화시설' },
+  { name: '숙박', file: '서울_숙박' },
+  { name: '여행코스', file: '서울_여행코스' },
+  { name: '축제/공연', file: '서울_축제공연행사' }
+];
 
 const items = ref([]);
 const isLoading = ref(false);
@@ -114,6 +115,11 @@ const newPost = ref('');
 // 챗봇 상태
 const isChatOpen = ref(false);
 
+const getCategoryName = (file) => {
+  const cat = categories.find(c => c.file === file);
+  return cat ? cat.name : '';
+};
+
 const fetchData = async (fileName) => {
   currentTab.value = fileName;
   isLoading.value = true;
@@ -125,7 +131,7 @@ const fetchData = async (fileName) => {
     const data = await response.json();
     items.value = data.items; 
   } catch (error) {
-    console.warn("데이터 로드 실패. 경로를 확인하세요.");
+    console.warn("데이터 로드 실패.");
   } finally {
     isLoading.value = false;
   }
@@ -133,114 +139,106 @@ const fetchData = async (fileName) => {
 
 const addPost = () => {
   if (!newPost.value.trim()) return;
-  posts.value.unshift({
-    id: Date.now(),
-    title: '새로운 로컬 제보',
-    content: newPost.value,
-    time: '방금 전'
-  });
+  posts.value.unshift({ id: Date.now(), title: '새로운 제보', content: newPost.value, time: '방금 전' });
   newPost.value = '';
 };
+
+
 </script>
 
 <style scoped>
-/* 폰트 및 전체 배경 (눈이 편안한 밝은 톤) */
+
 .app-wrapper {
-  background-color: #F8F9FA;
+  background-color: #F4F1EA; /* 따뜻한 한지 톤 */
   min-height: 100vh;
   font-family: 'Pretendard', sans-serif;
-  color: #212529;
+  color: #2D2A26; /* 먹물 같은 딥 차콜 */
   padding-bottom: 80px;
 }
 
-/* 상단 헤더 (딥 퍼플 배경에 흰색/골드 텍스트로 가독성 확보) */
 .header {
-  background-color: #2b1b46; /* 깊은 보라색 */
-  padding: 20px;
+  background-color: #1E1C1A; /* 먹물 차콜 */
+  padding: 24px 20px;
   text-align: center;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  border-bottom: 3px solid #2B5B53; /* 차분한 단청 청록색 */
 }
 .header .logo {
-  color: #ffffff;
+  color: #F4F1EA;
   font-size: 1.8rem;
-  font-weight: 800;
+  font-weight: 700;
   margin: 0 0 5px 0;
+  letter-spacing: 2px; /* 정갈한 자간 */
 }
 .header .logo span {
-  color: #F5A623; /* 명시성 높은 옐로우 골드 */
+  color: #2B5B53; /* 청록색 포인트 */
 }
 .header .subtitle {
-  color: #e9ecef;
+  color: #9E988F;
   font-size: 0.9rem;
   margin: 0;
+  font-weight: 300;
 }
 
-/* 메인 컨텐츠 영역 */
 .main-content {
   max-width: 800px;
   margin: 0 auto;
-  padding: 20px;
+  padding: 30px 20px;
   display: flex;
   flex-direction: column;
-  gap: 30px;
+  gap: 40px;
 }
-
-/* --- 상단: 정보 리스트 영역 --- */
-.tab-buttons {
-  display: flex;
-  gap: 10px;
+.tab-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); /* 3x2 그리드로 깔끔하게 */
+  gap: 8px;
   margin-bottom: 15px;
 }
-.tab-buttons button {
-  flex: 1;
-  background-color: #ffffff;
-  border: 1px solid #dee2e6;
-  padding: 12px;
-  border-radius: 8px;
+.tab-grid button {
+  background: #ffffff;
+  border: 1px solid #1e1c1a;
+  padding: 10px;
   font-weight: 600;
-  color: #495057;
   cursor: pointer;
   transition: all 0.2s;
 }
-.tab-buttons button.active {
-  background-color: #F5A623;
-  color: #2b1b46;
-  border-color: #F5A623;
+.tab-grid button.active {
+  background: #2B5B53;
+  color: white;
 }
 
-/* 🔥 핵심: 스크롤이 고정된 리스트 컨테이너 */
 .list-container {
-  background: #ffffff;
-  border: 1px solid #dee2e6;
-  border-radius: 12px;
-  height: 450px; /* 높이 고정! 이 안에서만 스크롤됨 */
+  background: #FFFFFF;
+  border: 1px solid #2D2A26; /* 진한 먹물 테두리 */
+  border-radius: 0; /* 직각 */
+  height: 450px;
   overflow-y: auto;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+  box-shadow: 4px 4px 0px rgba(45, 42, 38, 0.1); /* 전통 가구 느낌의 솔리드 그림자 */
 }
 .list-item {
   display: flex;
-  padding: 15px;
-  border-bottom: 1px solid #f1f3f5;
+  padding: 20px;
+  border-bottom: 1px solid #E5E1D8;
   transition: background-color 0.2s;
 }
 .list-item:hover {
-  background-color: #f8f9fa;
+  background-color: #FAF9F6;
 }
 .item-img {
-  width: 80px;
-  height: 80px;
-  border-radius: 8px;
+  width: 90px;
+  height: 90px;
+  border-radius: 0; /* 직각 이미지 */
   object-fit: cover;
   flex-shrink: 0;
-  margin-right: 15px;
+  margin-right: 20px;
+  border: 1px solid #E5E1D8;
 }
 .no-img {
-  background-color: #e9ecef;
+  background-color: #E5E1D8;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.7rem;
-  color: #adb5bd;
+  font-size: 0.75rem;
+  color: #8C867A;
 }
 .item-info {
   display: flex;
@@ -248,20 +246,21 @@ const addPost = () => {
   justify-content: center;
 }
 .item-category {
-  font-size: 0.7rem;
-  color: #F5A623;
+  font-size: 0.75rem;
+  color: #2B5B53;
   font-weight: 700;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
+  letter-spacing: 1px;
 }
 .item-title {
-  font-size: 1.1rem;
+  font-size: 1.15rem;
   font-weight: 700;
-  margin: 0 0 5px 0;
-  color: #212529;
+  margin: 0 0 8px 0;
+  color: #2D2A26;
 }
 .item-address {
   font-size: 0.85rem;
-  color: #6c757d;
+  color: #7A7469;
   margin: 0;
 }
 .status-box {
@@ -269,87 +268,92 @@ const addPost = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #868e96;
+  color: #7A7469;
 }
 
-/* --- 하단: 커뮤니티 게시판 영역 --- */
 .board-section {
-  background: #ffffff;
-  border: 1px solid #dee2e6;
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+  background: #FFFFFF;
+  border: 1px solid #2D2A26;
+  border-radius: 0; /* 직각 */
+  padding: 25px;
+  box-shadow: 4px 4px 0px rgba(45, 42, 38, 0.1);
 }
 .section-header h2 {
   font-size: 1.3rem;
-  color: #2b1b46;
-  margin: 0 0 15px 0;
+  color: #1E1C1A;
+  margin: 0 0 20px 0;
+  border-left: 4px solid #2B5B53;
+  padding-left: 10px;
 }
 .board-container {
-  max-height: 250px; /* 게시판도 뷰 높이 고정 */
+  max-height: 250px;
   overflow-y: auto;
-  border-top: 2px solid #2b1b46;
-  margin-bottom: 15px;
+  border-top: 1px solid #2D2A26;
+  margin-bottom: 20px;
 }
 .board-item {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  padding: 12px 0;
-  border-bottom: 1px solid #f1f3f5;
+  padding: 16px 0;
+  border-bottom: 1px dashed #D1CCC2; /* 점선으로 전통적인 느낌 부각 */
 }
 .board-content h4 {
-  margin: 0 0 5px 0;
-  font-size: 1rem;
-  color: #212529;
+  margin: 0 0 8px 0;
+  font-size: 1.05rem;
+  color: #2D2A26;
 }
 .board-content p {
   margin: 0;
-  font-size: 0.85rem;
-  color: #6c757d;
+  font-size: 0.9rem;
+  color: #5C564D;
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
-  -webkit-line-clamp: 1; /* 한 줄만 표시 */
+  -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
 }
 .board-time {
   font-size: 0.75rem;
-  color: #adb5bd;
+  color: #8C867A;
   white-space: nowrap;
-  margin-left: 10px;
+  margin-left: 15px;
 }
 
-/* 빠른 글쓰기 인풋 */
 .quick-write {
   display: flex;
   gap: 10px;
 }
 .quick-write input {
   flex: 1;
-  padding: 12px;
-  border: 1px solid #ced4da;
-  border-radius: 6px;
+  padding: 12px 15px;
+  border: 1px solid #C4BEB1;
+  border-radius: 0; /* 직각 */
   outline: none;
+  background-color: #FAF9F6;
+  color: #2D2A26;
 }
 .quick-write input:focus {
-  border-color: #2b1b46;
+  border-color: #2B5B53;
 }
 .quick-write button {
-  background-color: #2b1b46;
-  color: white;
+  background-color: #1E1C1A;
+  color: #F4F1EA;
   border: none;
-  padding: 0 20px;
-  border-radius: 6px;
+  padding: 0 25px;
+  border-radius: 0; /* 직각 */
   font-weight: bold;
   cursor: pointer;
+  transition: background-color 0.2s;
+}
+.quick-write button:hover {
+  background-color: #2B5B53;
 }
 
-/* 우측 하단 챗봇 */
 .chatbot-floating {
   position: fixed;
-  bottom: 20px;
-  right: 20px;
+  bottom: 25px;
+  right: 25px;
   z-index: 100;
   display: flex;
   flex-direction: column;
@@ -358,65 +362,76 @@ const addPost = () => {
 .chat-btn {
   width: 60px;
   height: 60px;
-  border-radius: 50%;
-  background-color: #F5A623;
-  border: 2px solid #2b1b46;
+  border-radius: 0; /* 동그라미 대신 도장(낙관) 느낌의 사각형 */
+  background-color: #2B5B53;
+  border: 2px solid #1E1C1A;
   font-size: 1.8rem;
   cursor: pointer;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+  box-shadow: 4px 4px 0px rgba(45, 42, 38, 0.15);
+  transition: transform 0.1s;
+}
+.chat-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0px rgba(45, 42, 38, 0.15);
 }
 .chat-window {
-  width: 300px;
-  background: white;
-  border: 1px solid #2b1b46;
-  border-radius: 12px;
+  width: 320px;
+  background: #FFFFFF;
+  border: 2px solid #2D2A26;
+  border-radius: 0; /* 직각 */
   overflow: hidden;
-  margin-bottom: 10px;
-  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+  margin-bottom: 15px;
+  box-shadow: 6px 6px 0px rgba(45, 42, 38, 0.1);
 }
 .chat-header {
-  background: #2b1b46;
-  color: white;
-  padding: 10px 15px;
+  background: #1E1C1A;
+  color: #F4F1EA;
+  padding: 12px 20px;
   display: flex;
   justify-content: space-between;
   font-weight: bold;
+  border-bottom: 2px solid #2B5B53;
 }
 .chat-header button {
   background: none;
   border: none;
-  color: white;
+  color: #F4F1EA;
   cursor: pointer;
+  font-size: 1.2rem;
 }
 .chat-body {
-  padding: 15px;
-  background: #f8f9fa;
-  min-height: 150px;
+  padding: 20px;
+  background: #F4F1EA;
+  min-height: 180px;
 }
 .bot-msg {
-  background: white;
-  padding: 10px;
-  border-radius: 8px;
-  border: 1px solid #e9ecef;
+  background: #FFFFFF;
+  padding: 12px 15px;
+  border-radius: 0; /* 직각 말풍선 */
+  border: 1px solid #D1CCC2;
   font-size: 0.9rem;
   margin: 0;
+  color: #2D2A26;
+  border-left: 3px solid #2B5B53;
 }
 .chat-input {
   display: flex;
-  border-top: 1px solid #e9ecef;
+  border-top: 1px solid #D1CCC2;
 }
 .chat-input input {
   flex: 1;
-  padding: 10px;
+  padding: 12px 15px;
   border: none;
   outline: none;
+  background: #FFFFFF;
 }
 .chat-input button {
-  background: #F5A623;
+  background: #2B5B53;
   border: none;
-  color: #2b1b46;
+  border-left: 1px solid #D1CCC2;
+  color: #F4F1EA;
   font-weight: bold;
-  padding: 0 15px;
+  padding: 0 20px;
   cursor: pointer;
 }
 </style>
