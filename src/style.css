@@ -1,0 +1,12 @@
+/*
+ * 최소 전역 리셋. FE v6 셸과 모든 컴포넌트는 scoped CSS 를 쓰므로 Tailwind 는 사용하지 않는다.
+ * (v6 는 Tailwind 없이 디자인되었고, Preflight 전역 리셋이 오히려 한지 테마를 흔들 수 있어 제거함.)
+ */
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
