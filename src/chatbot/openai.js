@@ -35,7 +35,7 @@ function friendlyError(status, body) {
  * @param {{context: string, history: object[], apiKey: string, model?: string, signal?: AbortSignal}} opts
  * @returns {Promise<string>} assistant 응답 텍스트
  */
-export async function complete({ context, history, apiKey, model = 'gpt-4o-mini', signal }) {
+export async function complete({ context, history, apiKey, model = 'gpt-5-mini', signal }) {
   if (!apiKey) {
     throw new ChatError('API 키가 설정되지 않았습니다. .env.example 을 .env 로 복사하고 키를 채우세요.')
   }
@@ -56,7 +56,17 @@ export async function complete({ context, history, apiKey, model = 'gpt-4o-mini'
         'Content-Type': 'application/json',
         Authorization: `Bearer ${apiKey}`,
       },
-      body: JSON.stringify({ model, messages, temperature: 0.3, max_tokens: 600 }),
+      // GPT-5 계열(추론 모델) 파라미터:
+      //  - max_tokens 미지원 → max_completion_tokens 사용 (gpt-4o 계열도 허용)
+      //  - temperature 는 기본값(1)만 허용 → 커스텀 값 보내지 않음
+      //  - reasoning_effort 'minimal': RAG 용도이므로 내부 추론을 최소화(속도·비용↓,
+      //    추론 토큰이 답변 몫을 잠식해 빈 응답이 나오는 것을 방지)
+      body: JSON.stringify({
+        model,
+        messages,
+        max_completion_tokens: 1024,
+        reasoning_effort: 'minimal',
+      }),
     })
   } catch (err) {
     if (err.name === 'AbortError') throw err

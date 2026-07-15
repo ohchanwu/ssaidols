@@ -21,7 +21,7 @@ export { CHAT_KEY } from './store.js'
 
 export function createChatbot({
   apiKey = import.meta.env?.VITE_OPENAI_API_KEY,
-  model = import.meta.env?.VITE_OPENAI_MODEL || 'gpt-4o-mini',
+  model = import.meta.env?.VITE_OPENAI_MODEL || 'gpt-5-mini',
   baseUrl = '/index',
   k = 8,
   storage = globalThis.localStorage,
