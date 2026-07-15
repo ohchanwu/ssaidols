@@ -3,7 +3,7 @@
     <!-- 상단 네비게이션 -->
     <header class="header">
       <div class="header-inner">
-        <h1 class="logo">LocalHub <span>서울</span></h1>
+        <h1 class="logo">6백년의 역사, <span>서울</span></h1>
         <p class="subtitle">시민들이 직접 공유하는 서울의 진짜 명소</p>
       </div>
     </header>
