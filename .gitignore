@@ -20,3 +20,6 @@ Thumbs.db
 
 # Excel 임시 잠금 파일
 ~$*
+
+# Claude Code 설정 파일 — 산출물에 포함하지 않음
+CLAUDE.md
