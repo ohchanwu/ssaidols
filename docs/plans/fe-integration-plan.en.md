@@ -4,7 +4,45 @@
 
 > Korean version: [`fe-integration-plan.ko.md`](./fe-integration-plan.ko.md) — both versions are kept in sync.
 
-## Settled decisions
+## ⚠️ v6 re-integration (final — this section takes precedence)
+
+The FE teammate pushed **v3–v6 after v2** (`cfb56d2`) — effectively a **full redesign**. The sections
+below are the original v2-based integration record; **the final state follows this section.**
+
+**What changed in v6:**
+- **Complete re-theme to hanji (traditional Korean paper)** — the old purple/gold is gone; now paper beige
+  (`#F4F1EA`), ink charcoal, 단청 teal (`#2B5B53`), square corners, stamp-style shadows.
+- **Desktop layout** — `max-width: 800px`, a 3×2 tab grid.
+- The teammate **added their own board and chatbot UIs, but both were non-functional shells**
+  (board = in-memory, no password/persistence; chatbot = static message, does nothing).
+
+**Settled re-integration approach (user decision):**
+1. **v6 (`cfb56d2`) design is authoritative.** Adopt the hanji theme and layout as-is.
+2. **Board: "their look, my function"** — keep the v6 hanji board styling, back it with localStorage CRUD +
+   password + soft delete so it meets RFP III-2.
+3. **Chatbot: "their look, my core"** — keep the v6 hanji chat UI, wire it to the retrieval + OpenAI core.
+4. **Keep the `snake_case` post schema** (chatbot posts.js integration contract).
+5. **Remove Tailwind** — v6 was designed without it, in scoped CSS. Preflight's global reset risks disturbing
+   the hanji theme, so it's dropped.
+
+**Final component structure:**
+```
+src/App.vue                    ← v6 hanji shell (tabs→slim index, mounts BoardSection·ChatPanel)
+src/components/BoardSection.vue ← inline hanji board + localStorage CRUD
+src/components/ChatPanel.vue    ← hanji chat UI + createChatbot() core
+src/components/PasswordModal.vue← hanji password confirm (shared by edit·delete)
+src/chatbot/                    ← core (framework-free, unchanged)
+```
+Retired: `BoardView.vue`·`ChatWidget.vue` (the initial indigo/Tailwind versions, superseded),
+`board_demo.html`, Tailwind config.
+
+> Because the repo structures diverged sharply (theirs = nested projects, ours = consolidated root), we
+> integrated by **bringing the v6 App.vue design into our structure rather than re-merging.** The commit
+> message credits the v6 source.
+
+---
+
+## Settled decisions (v2-based — original record below)
 
 1. **The frontend on `origin/feature/frontend-work` (`ssafy-teamPJT`) is the authoritative shell.**
 2. **`board_demo.html` will be ported to Vue components.** (Not discarded, not rewritten — translated.)

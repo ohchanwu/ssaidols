@@ -4,7 +4,40 @@
 
 > English version: [`fe-integration-plan.en.md`](./fe-integration-plan.en.md) — 두 버전은 동기화 상태를 유지한다.
 
-## 확정된 결정
+## ⚠️ v6 재통합 (최종 — 이 섹션이 우선한다)
+
+FE 팀원이 v2 이후 **v3~v6 을 추가로 푸시**했고(`cfb56d2`), 이는 사실상 **전면 재디자인**이다.
+아래 하단 섹션들은 v2 기준 초기 통합 기록이며, **최종 상태는 이 섹션을 따른다.**
+
+**v6 의 변화:**
+- **한지(hanji) 테마로 전면 교체** — 기존 보라/골드 → 한지 베이지(`#F4F1EA`)·먹물 차콜·단청 청록(`#2B5B53`), 직각 모서리·도장 그림자.
+- **데스크톱 레이아웃** — `max-width: 800px`, 탭 3×2 그리드.
+- FE 팀원이 **자체 게시판·챗봇 UI 를 추가**했으나 **둘 다 비기능 껍데기**였다
+  (게시판=메모리 전용·비밀번호/영속화 없음, 챗봇=고정 메시지·동작 안 함).
+
+**확정된 재통합 방침 (사용자 결정):**
+1. **v6(`cfb56d2`) 디자인이 정본이다.** 한지 테마·레이아웃 그대로 채택.
+2. **게시판: "그들의 룩, 나의 기능"** — v6 한지 게시판 스타일 유지 + localStorage CRUD·비밀번호·소프트삭제로 실제 동작하게. RFP III-2 필수 충족.
+3. **챗봇: "그들의 룩, 나의 코어"** — v6 한지 챗봇 UI 유지 + 검색·OpenAI 코어 연결.
+4. **게시글 스키마 `snake_case`** 유지 (챗봇 posts.js 통합 계약).
+5. **Tailwind 제거** — v6 는 Tailwind 없이 scoped CSS 로 설계됨. Preflight 전역 리셋이 한지 테마를 흔들 위험이 있어 제거.
+
+**최종 컴포넌트 구조:**
+```
+src/App.vue                    ← v6 한지 셸 (탭→슬림인덱스, BoardSection·ChatPanel 마운트)
+src/components/BoardSection.vue ← 한지 인라인 게시판 + localStorage CRUD
+src/components/ChatPanel.vue    ← 한지 챗봇 UI + createChatbot() 코어
+src/components/PasswordModal.vue← 한지 비밀번호 확인 (수정·삭제 공유)
+src/chatbot/                    ← 코어 (프레임워크 비의존, 그대로)
+```
+폐기: `BoardView.vue`·`ChatWidget.vue`(초기 인디고/Tailwind 버전, 대체됨), `board_demo.html`, Tailwind 설정.
+
+> 저장소 구조가 크게 갈라져(그들=중첩 프로젝트, 우리=루트 통합) **재머지 대신 v6 App.vue 설계를
+> 우리 구조로 가져오는 방식**으로 통합했다. 커밋 메시지에 v6 출처를 명기.
+
+---
+
+## 확정된 결정 (v2 기준 — 아래는 초기 기록)
 
 1. **`origin/feature/frontend-work` 의 프론트엔드(`ssafy-teamPJT`)가 정본 셸이다.**
 2. **`board_demo.html` 은 Vue 컴포넌트로 이식한다.** (폐기 아님, 재작성 아님 — 번역)
